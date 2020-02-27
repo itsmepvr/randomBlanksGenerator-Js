@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>PreSchool Template</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel='stylesheet' href='_bootstrap.min.css' />
+    <script src='_jquery.min.js'></script>
+    <script src='_bootstrap.min.js'></script>
+    <script src='_flowtype.js'></script>
+    <script src='_resize_text.js'></script>
+    <link rel='stylesheet' href='_main_v1.1.css'>
+    <style>
+    </style>
+</head>
+
+<body id='mainBody'>
+    <span style="display:none" id="ankiTags">{{Tags}}</span>
+    <div class="se-pre-con"></div>
+    <div id='instructions' style='display: none'></div>
+    <div id="f-question" style="display: none">{{Front}}</div>
+    <div id="f-answer" style="display: none">{{answers}}</div>
+    <div id="f-audios" style="display: none">{{headers_audios}}</div>
+    <div id='wrapper'>
+        <center id='wrapperInner'>
+            <div class='panel-group'>
+                <div class="panel panel-info">
+                    <div class="panel-body font_12" id='panelHeading'>Random Blank Generator</div>
+                    <div class="panel-body font_9" id='panelBody'>
+                        <table>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </center>
+    </div>
+    <div id='footer'>
+        <center><img src='_logo1.png' style='width:50px;height:50px' />
+            <img src='_Preloader_2.gif' style='display:none' /></center>
+        <div id='noteId' style='position:fixed;right:0;bottom:0;'>ID: {{Note Id}}</div>
+    </div>
+    <div id='reinforce' style='display:none'>{{reinforcement}}</div>
+    <script src='_jquery.ui.min.js'></script>
+    <script src='_jquery.imgexplosion.js'></script>
+    <script src='_instructions_v2.4.js'></script>
+    <script src='_blast.min.js'></script>
+    <script src='_stopwords_v1.2.js'></script>
+    <script>
+        $(window).on('load', function () {
+            // Loading gif
+            $('.se-pre-con').fadeOut('slow', function () { $(this).remove(); });
+            var windowWidth = $(window).width();
+            var windowHeight = $(window).height();
+            var wrapperHeight = windowHeight - 50;
+            $("#wrapper").css({ "height": windowHeight - 50 + "px" });
+            // Variable and responsive font size
+            $('body').flowtype({
+                minimum: 500,
+                maximum: 1200,
+                minFont: 12,
+                maxFont: 40,
+                fontRatio: 40
+            });
+            // Random color manage for panels
+
+            var lightColors = panelColors;
+            var lightColor = Object.keys(lightColors);
+            lightColor = getRandom(lightColor, 4);
+
+            $('#panelHeading').css({ "background-color": lightColors[lightColor[1]] });
+            $('#panelBody').css({ "background-color": lightColors[lightColor[2]] });
+            $('#panelFooter').css({ "background-color": lightColors[lightColor[3]] });
+
+            var panelHeight = $("#wrapper").height() - $("#panelHeading").outerHeight();
+            $("#panelBody").css({"max-height": panelHeight+"px"});
+
+            generateBlanks = new generateRandomBlanks("panelBody");
+            generateBlanks.load();
+        })
+
+        function callback(){
+            coinFlip();
+        }
+
+        function generateRandomBlanks(srcId) {
+            self = this;
+            self.srcId = srcId;
+            self.paragraph = "In compliance with the request of a friend of mine, who wrote me from the East, I called on good-natured, garrulous old Simon Wheeler, and inquired after my friend's friend, Leonidas W. Smiley, as requested to do, and I hereunto append the result. I have a lurking suspicion that Leonidas W. Smiley is a myth; and that my friend never knew such a personage; and that he only conjectured that if I asked old Wheeler about him, it would remind him of his infamous Jim Smiley, and he would go to work and bore me to death with some exasperating reminiscence of him as long and as tedious as it should be useless to me. If that was the design, it succeeded.In compliance with the request of a friend of mine, who wrote me from the East, I called on good-natured, garrulous old Simon Wheeler, and inquired after my friend's friend, Leonidas W. Smiley, as requested to do, and I hereunto append the result. I have a lurking suspicion that Leonidas W. Smiley is a myth; and that my friend never knew such a personage; and that he only conjectured that if I asked old Wheeler about him, it would remind him of his infamous Jim Smiley, and he would go to work and bore me to death with some exasperating reminiscence of him as long and as tedious as it should be useless to me. If that was the design, it succeeded.";
+            self.sentences = [];
+            self.allWords = [];
+            self.stopwords = stopwords;
+            self.mainWords = [];
+            self.qCount = 0;
+            self.totalCount = 0;
+            self.blanks = {};
+
+            self.load = function () {
+                var para = wrapText(self.paragraph);
+                var srcId = $("#" + self.srcId);
+                srcId.css({"overflow": "auto", "text-align": "left"});
+                srcId.html(para);
+                // blast para to sentence
+                srcId.blast({
+                    delimiter: "sentence",
+                    stripHTMLTags: true,
+                    tag: "span",
+                    customClass: 'b-sentence'
+                });
+                //$(".b-sentence").css({"display": "inline-block"});
+                srcId.find(".blast").each(function (cnt) {
+                    self.sentences.push($(this).html());
+                    $(this).attr('id', 'b-sentence' + cnt);
+                });
+                self.totalCount = self.sentences.length;
+                self.generateBlanks();
+            }
+
+            self.filterArray = function (arr) {
+                var arr = arr;
+                var uniqueArr = [];
+                // removing duplicates
+                $.each(arr, function (i, el) {
+                    if ($.inArray(el, uniqueArr) === -1) uniqueArr.push(el);
+                });
+                // removing stopwords
+                uniqueArr = uniqueArr.filter(function (el) {
+                    return stopwords.indexOf(el) < 0;
+                });
+                return uniqueArr;
+            }
+
+            self.generateBlanks = function () {
+                //$("#"+self.srcId).html("");
+                $(".blast").removeClass('blast');
+                $("#" + self.srcId).removeClass('blast-root');
+                var senTotalWords = [];
+                $('.b-sentence').each(function (cnt) {
+                    $(this).blast({
+                        delimiter: "word",
+                        customClass: 'b-word'
+                    });
+                    var senWords = [];
+                    $(this).find(".b-word").each(function () {
+                        senWords.push($(this).html());
+                        $(this).attr('data-word', $(this).html());
+                    });
+                    senWords = self.filterArray(senWords);
+                    self.blanks[cnt] = getRandom(senWords, 1)[0];
+                    $(this).find(".b-word[data-word='" + self.blanks[cnt] + "']").replaceWith("<button class='inputBlank btn btn-default' style='padding: 0 30px;cursor:pointer;background-color:lightyellow;color:red;'>?</button>");
+                    self.mainWords = self.mainWords.concat(senWords);
+                });
+                self.mainWords = self.filterArray(self.mainWords);
+                self.startQuestion();
+            }
+
+            self.startQuestion = function () {
+                var src = $("#b-sentence" + self.qCount);
+                var tt = src.offset().top - $("#"+self.srcId).offset().top;
+                $("#"+self.srcId).animate({scrollTop: tt}, { duration:'medium', easing: 'swing' });
+                $(".b-sentence").css({ "background-color": "transparent" });
+                src.css({ "background-color": "white" });
+                var blank = self.blanks[self.qCount];
+                var blanks = self.mainWords;
+                var blankIndex = blanks.indexOf(blank);
+                if (blankIndex > -1) {
+                    blanks.splice(blankIndex, 1);
+                }
+                var options = [blank];
+                options = options.concat(getRandom(blanks, 3));
+                shuffle(options);
+                for(var i=0;i<options.length;i++){
+                    options[i] = "<button class='btn btn-primary btn-sm opp'>"+options[i]+"</div>";
+                }
+                src.focus();
+                $("#"+self.srcId).append("<div class='b-options' style='position:fixed;bottom:0;left:50%;-webkit-transform:translateX(-50%);width:auto;max-width:100%;background-color:#fff;padding:5px;border-radius:5px 5px 0 0 ;text-align:center;padding-bottom:20px;'><span style='color:brown;font-size:15px'>Choose the correct option</span><div></div></div>");
+                $(".b-options div").html(options.join(""));
+                $(".opp").css({"margin": "3px"});
+                $(".opp").click(function(){
+                    var evaluate = self.evaluate($(this).html(), blank);
+                    if(evaluate){
+                        src.find('.inputBlank').replaceWith("<span style='font-weight:bold;color:green'>"+$(this).html()+"</span>");
+                        $(".b-options").html("<div class='alert alert-success'><div class='zoomOut'>Correct Answer</div></div>");
+                        setTimeout(function(){
+                            $(".b-options").remove('.b-options');
+                            self.qCount++;
+                            if(self.qCount < self.totalCount){
+                                self.startQuestion();
+                            }else{
+                                self.qCount = 0;
+                                $(".b-sentence").css({ "background-color": "transparent" });
+                                callback();
+                            }
+                        }, 1000);
+                    }else{
+                        $(this).addClass('shake-lr');
+                        $(".b-options span").html("Try again");
+                        setTimeout(function(){
+                            $(".opp").removeClass('shake-lr');
+                            $(".b-options span").html("Choose the correct option");
+                        }, 500)
+                    }
+                });
+            }
+
+            self.evaluate = function(op1, op2){
+                console.log(op1, op2);
+                if(op1 == op2){
+                    return true;
+                }else{
+                    return false;
+                }
+            }
+        }
+
+    </script>
+</body>
+
+</html>
